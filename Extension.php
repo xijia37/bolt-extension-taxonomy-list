@@ -144,6 +144,13 @@ class Extension extends \Bolt\BaseExtension
                 $weighted = true;
             }
 
+            $condition = '';
+            if(isset($params['filters'])) {
+                foreach($params['filters'] as $field => $value) {
+                    $condition .= sprintf(' AND c.%s = %s', $field, $value);
+                }
+            }
+
             $prefix = $this->app['config']->get('general/database/prefix', 'bolt_');
             $taxonomy_table_name    = $prefix . "taxonomy";
             $contenttype_table_name = $prefix . $contenttype;
@@ -155,19 +162,36 @@ class Extension extends \Bolt\BaseExtension
                 $sortorder = 'slug ASC';
             }
 
+            $SQL_SELECT = sprintf('SELECT COUNT( t.name ) as count, t.slug, t.name FROM %s t', $taxonomy_table_name);
+            $SQL_JOIN = sprintf(' LEFT JOIN %s c ON t.content_id = c.id', $contenttype_table_name);
+            $SQL_WHERE = sprintf(' WHERE t.taxonomytype = "%s"', $name);
+
+            if(isset($params['filters'])) {
+                $i = 0;
+                foreach($params['filters'] as $field => $value) {
+                    $SQL_JOIN .= sprintf(' LEFT JOIN %s t_%s ON t_%s.content_id = c.id', $taxonomy_table_name, $i, $i);
+                    $SQL_WHERE .= sprintf(' AND t_%s.taxonomytype = "%s" AND t_%s.slug = "%s"', $i, $field, $i, $value);
+                }
+            }
+
+            $SQL_EXTRA_WHERE = ' AND c.status = "published" GROUP BY t.name ORDER BY t.name';
+
             // the normal query
-            $query = sprintf(
-                "SELECT COUNT( t.name ) as count, t.slug, t.name
-                FROM %s t LEFT JOIN %s c
-                ON t.content_id = c.id
-                WHERE t.taxonomytype IN ('%s')
-                AND c.status = 'published'
-                GROUP BY name ORDER BY %s",
-                $taxonomy_table_name,
-                $contenttype_table_name,
-                $name,
-                $sortorder
-            );
+            $query = $SQL_SELECT. $SQL_JOIN. $SQL_WHERE. $SQL_EXTRA_WHERE;
+            //$query = sprintf(
+                //"SELECT COUNT( t.name ) as count, t.slug, t.name
+                //FROM %s t LEFT JOIN %s c
+                //ON t.content_id = c.id
+                //WHERE t.taxonomytype IN ('%s')
+                //AND c.status = 'published'
+                //%s
+                //GROUP BY name ORDER BY %s",
+                //$taxonomy_table_name,
+                //$contenttype_table_name,
+                //$name,
+                //$condition,
+                //$sortorder
+            //);
 
             // append limit to query the parameter is set
             if($limit) {
