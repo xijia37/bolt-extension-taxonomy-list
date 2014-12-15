@@ -1,0 +1,22 @@
+{
+	"name" : "xijia37/bolt-extension-taxonomylist",
+	"description" : "taxonomy list for twig",
+	"type" : "bolt-extension",
+	"require" : {
+		"bolt/bolt" : ">=2.0.0,<3.0.0"
+	},
+	"autoload" : {
+		"files" : [
+			"init.php"
+		],
+		"psr-4" : {
+			"Bolt\\Extension\\xijia37\\TaxonomyList\\" : ""
+
+		}
+	},
+	"extra" : {
+		"branch-alias" : {
+			"dev-master" : "dev-develop"
+		}
+	}
+}
